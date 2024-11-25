@@ -184,7 +184,7 @@ class DDM:
             self.init(init_parameters)
         else:
             self.stimulus = 0
-            self.decision_boundary = 5
+            self.decision_boundary = 0
             self.sigma = 0.01
     def init(self, init_parameters):
         self.stimulus = 0   #当前信号
