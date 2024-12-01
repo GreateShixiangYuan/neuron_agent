@@ -151,8 +151,8 @@ class Sensor_Neuron:
         else:
             self.activation = False
             self.rest_fire_time = 0
-            self.fire_frequency = np.array([0.1, 0.1, 0.1])
-            self.max_fire_time = np.array([1, 1, 1])
+            self.fire_frequency = np.random.uniform(0,0.5,3)
+            self.max_fire_time = np.random.uniform(0,2,3)
     def init(self, init_parameters):
         self.activation = False
         self.rest_fire_time = 0     #也模拟神经递质释放时间
