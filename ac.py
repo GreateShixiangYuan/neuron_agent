@@ -53,38 +53,54 @@ class Agent:
         critic_loss.backward()
         self.actor_optimizer.step()
         self.critic_optimizer.step()
-device='cuda:0'
-actor_lr=0.001
-critic_lr=0.001
-gamma=0.8
-agent=Agent(actor_lr,critic_lr,gamma,device)
-# agent.actor.load_state_dict(torch.load("actor.pkl"))
-# agent.critic.load_state_dict(torch.load("critic.pkl"))
-env=Environment()
-epochs=20000
-longest_time=6000
-for epoch in range(epochs):
-    state=env.reset()
-    score=0
-    energy=10
-    done=False
-    while not done:
-        action=agent.get_action(state)
-        next_state=env.step(action)
-        score+=1
-        if energy<=0 or score>longest_time:
-            done=True
-        reward=0
-        if next_state[1]==1:
-            reward=1
-        elif next_state[1]==-1:
-            reward=-1
-        else:
-            reward=-0.05
-        energy+=reward
-        agent.update(state,action,reward,next_state,done)
-        state=next_state
-    if epoch%1==0:
-        print("Epoch:",epoch,"Score:",score)
-torch.save(agent.actor.state_dict(),"actor.pkl")
-torch.save(agent.critic.state_dict(),"critic.pkl")
+import time
+import matplotlib.pyplot as plt
+import pickle
+import numpy as np
+ac_score_list=np.zeros(6000)
+ac_end_time=0
+for i in range(5):
+    start_time=time.time()
+    device='cuda:0'
+    actor_lr=0.001
+    critic_lr=0.01
+    gamma=0.98
+    agent=Agent(actor_lr,critic_lr,gamma,device)
+    # agent.actor.load_state_dict(torch.load("actor.pkl"))
+    # agent.critic.load_state_dict(torch.load("critic.pkl"))
+    env=Environment()
+    epochs=6000
+    longest_time=6000
+    score_list=[]
+    for epoch in range(epochs):
+        state=env.reset()
+        score=0
+        energy=10
+        done=False
+        while not done:
+            action=agent.get_action(state)
+            next_state=env.step(action)
+            score+=1
+            if energy<0 or score>longest_time:
+                done=True
+            reward=0
+            if next_state[1]==1:
+                reward=0.3
+            # elif next_state[1]==-1:
+            #     reward=-1
+            # else:
+            reward-=0.05
+            energy+=reward
+            agent.update(state,action,reward,next_state,done)
+            state=next_state
+        score_list.append(score)
+        if epoch%1==0:
+            print("Epoch:",epoch,"Score:",score)
+    ac_score_list+=np.array(score_list)
+    ac_end_time+=time.time()-start_time
+    torch.save(agent.actor.state_dict(),"actor.pkl")
+    torch.save(agent.critic.state_dict(),"critic.pkl")
+ac_end_time/=5
+ac_score_list/=5
+pickle.dump(ac_score_list,open("ac_score_list.pkl","wb"))
+pickle.dump(ac_end_time,open("ac_end_time","wb"))
