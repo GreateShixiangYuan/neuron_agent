@@ -90,64 +90,80 @@ class PPO:
             critic_loss.backward()
             self.actor_optimizer.step()
             self.critic_optimizer.step()
+import time
+import matplotlib.pyplot as plt
+import pickle
+ppo_score_list=np.zeros(3000)
+ppo_end_time=0
+for i in range(5):
+    start_time=time.time()
+    actor_lr = 1e-3
+    critic_lr = 1e-2
+    num_episodes = 3000
+    hidden_dim = 32
+    gamma = 0.98
+    lmbda = 0.95
+    epochs = 10
+    eps = 0.2
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
+        "cpu")
+    from environment import Environment
+    env = Environment()
+    torch.manual_seed(0)
+    state_dim = 3
+    action_dim = 3
+    agent = PPO(state_dim, hidden_dim, action_dim, actor_lr, critic_lr, lmbda,
+                epochs, eps, gamma, device)
+    longest_time=6000
 
-actor_lr = 1e-3
-critic_lr = 1e-2
-num_episodes = 5000
-hidden_dim = 32
-gamma = 0.98
-lmbda = 0.95
-epochs = 10
-eps = 0.2
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
-    "cpu")
-from environment import Environment
-env = Environment()
-torch.manual_seed(0)
-state_dim = 3
-action_dim = 3
-agent = PPO(state_dim, hidden_dim, action_dim, actor_lr, critic_lr, lmbda,
-            epochs, eps, gamma, device)
-longest_time=6000
-
-return_list = []
-for i_episode in range(num_episodes):
-    episode_return = 0
-    transition_dict = {
-        'states': [],
-        'actions': [],
-        'next_states': [],
-        'rewards': [],
-        'dones': []
-    }
-    state = env.reset()
-    done = False
-    score=0
-    energy=10
-    while not done:
-        action = agent.take_action(state)
-        next_state = env.step(action)
-        score+=1
-        if energy<0 or score>longest_time:
-            done=True
-        reward=0
-        if next_state[1]==1:
-            reward=0.5
-        elif next_state[1]==-1:
+    return_list = []
+    score_list=[]
+    for i_episode in range(num_episodes):
+        episode_return = 0
+        transition_dict = {
+            'states': [],
+            'actions': [],
+            'next_states': [],
+            'rewards': [],
+            'dones': []
+        }
+        state = env.reset()
+        done = False
+        score=0
+        energy=10
+        while not done:
+            action = agent.take_action(state)
+            next_state = env.step(action)
+            score+=1
+            if energy<0 or score>longest_time:
+                done=True
             reward=0
-        if action==0:
-            reward-=0.05
-        else:
-            reward-=0.05
-        energy+=reward
-        # reward+=0.05
-        transition_dict['states'].append(state)
-        transition_dict['actions'].append(action)
-        transition_dict['next_states'].append(next_state)
-        transition_dict['rewards'].append(reward)
-        transition_dict['dones'].append(done)
-        state = next_state
-        episode_return += reward
-    return_list.append(episode_return)
-    agent.update(transition_dict)
-    print(score)
+            if next_state[1]==1:
+                reward=1
+            elif next_state[1]==-1:
+                reward=0
+            if action==0:
+                reward-=0.05
+            else:
+                reward-=0.05
+            energy+=reward
+            # reward+=0.05
+            transition_dict['states'].append(state)
+            transition_dict['actions'].append(action)
+            transition_dict['next_states'].append(next_state)
+            transition_dict['rewards'].append(reward)
+            transition_dict['dones'].append(done)
+            state = next_state
+            episode_return += reward
+        score_list.append(score)
+        return_list.append(episode_return)
+        agent.update(transition_dict)
+        print(i_episode,score)
+    ppo_score_list+=np.array(score_list)
+    ppo_end_time+=time.time()-start_time
+ppo_end_time/=5
+ppo_score_list/=5
+pickle.dump(ppo_score_list,open("ppo_score_list.pkl","wb"))
+pickle.dump(ppo_end_time,open("ppo_end_time","wb"))
+
+    
